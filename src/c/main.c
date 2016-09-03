@@ -7,6 +7,19 @@ static GFont s_time_font;
 static GFont s_date_font;
 static Layer *s_canvas_layer;
 static TextLayer *s_weather_layer;
+static BitmapLayer *s_bt_icon_layer;
+static GBitmap *s_bt_icon_bitmap;
+
+static void bluetooth_callback(bool connected) {
+  // Show icon if disconnected
+  layer_set_hidden(bitmap_layer_get_layer(s_bt_icon_layer), connected);
+
+  if(!connected) {
+    vibes_double_pulse();
+  } else {
+    vibes_short_pulse();
+  }
+}
 
 static void update_time() {
   // Get a tm structure
@@ -65,54 +78,73 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
 
 }
 
-static void main_window_load(Window *window) {
-  // Get information about the Window
-  Layer *window_layer = window_get_root_layer(window);
-  GRect bounds = layer_get_bounds(window_layer);
-
-  // Create the TextLayer with specific bounds
+static void draw_time(GRect bounds, Layer *window_layer) {
   s_time_layer = text_layer_create(GRect(0, PBL_IF_ROUND_ELSE(70, 64), bounds.size.w, 50));
-  s_date_layer = text_layer_create(GRect(0, 10, bounds.size.w, 20));
-  
-  // Create canvas layer
-  s_canvas_layer = layer_create(bounds);
-  
-  // Create GFont
   s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DOT_FONT_32));
-  s_date_font = fonts_load_custom_font(fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-  
-  // Apply to TextLayer
   text_layer_set_font(s_time_layer, s_time_font);
-  text_layer_set_font(s_date_layer, s_date_font);
-
-  // Improve the layout to be more like a watchface
+  
   text_layer_set_background_color(s_time_layer, GColorWhite);
   text_layer_set_text_color(s_time_layer, GColorBlack);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
+  
+  layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
+}
+
+static void draw_date(GRect bounds, Layer *window_layer) {
+  s_date_layer = text_layer_create(GRect(0, 10, bounds.size.w, 20));
+  s_date_font = fonts_load_custom_font(fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
+  text_layer_set_font(s_date_layer, s_date_font);
   
   text_layer_set_background_color(s_date_layer, GColorWhite);
   text_layer_set_text_color(s_date_layer, GColorBlack);
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
   
-  // Weather
+  layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
+}
+
+static void draw_lines(GRect bounds, Layer *window_layer) {
+  s_canvas_layer = layer_create(bounds);
   
-  // Create temperature Layer
+  layer_set_update_proc(s_canvas_layer, canvas_update_proc);
+  
+  layer_add_child(window_layer, s_canvas_layer);
+}
+
+static void draw_weather(GRect bounds, Layer *window_layer) {
   s_weather_layer = text_layer_create(GRect(0, bounds.size.h - 30, bounds.size.w, 20));
   
-  // Style the text
   text_layer_set_background_color(s_weather_layer, GColorWhite);
   text_layer_set_text_color(s_weather_layer, GColorBlack);
   text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
   text_layer_set_text(s_weather_layer, "Loading...");
   text_layer_set_font(s_weather_layer, s_date_font);
   
-  // Add it as a child layer to the Window's root layer
-  layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
-  layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_weather_layer));
-  layer_add_child(window_get_root_layer(window), s_canvas_layer);
+}
+
+static void create_bt_icon(GRect bounds, Layer *window_layer) {
+  // Create the Bluetooth icon GBitmap
+  s_bt_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BT_ICON);
   
-  layer_set_update_proc(s_canvas_layer, canvas_update_proc);
+  // Create the BitmapLayer to display the GBitmap
+  s_bt_icon_layer = bitmap_layer_create(GRect(bounds.size.w - 40, 12, 30, 30));
+  bitmap_layer_set_bitmap(s_bt_icon_layer, s_bt_icon_bitmap);
+  layer_add_child(window_layer, bitmap_layer_get_layer(s_bt_icon_layer));
+  
+  bluetooth_callback(connection_service_peek_pebble_app_connection());
+}
+
+static void main_window_load(Window *window) {
+  // Get information about the Window
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_bounds(window_layer);
+  
+  draw_time(bounds, window_layer);
+  draw_date(bounds, window_layer);
+  draw_weather(bounds, window_layer);
+  draw_lines(bounds, window_layer);
+  
+  create_bt_icon(bounds, window_layer);
 }
 
 static void main_window_unload(Window *window) {
@@ -127,6 +159,10 @@ static void main_window_unload(Window *window) {
   // Unload GFont
   fonts_unload_custom_font(s_time_font);
   fonts_unload_custom_font(s_date_font);
+  
+  // unload bt icon
+  gbitmap_destroy(s_bt_icon_bitmap);
+  bitmap_layer_destroy(s_bt_icon_layer);
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
@@ -189,6 +225,11 @@ static void init() {
   const int inbox_size = 128;
   const int outbox_size = 128;
   app_message_open(inbox_size, outbox_size);
+  
+  // Register for Bluetooth connection updates
+  connection_service_subscribe((ConnectionHandlers) {
+    .pebble_app_connection_handler = bluetooth_callback
+  });
 }
 
 static void deinit() {

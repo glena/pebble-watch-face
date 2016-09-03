@@ -14,26 +14,14 @@
         "resources": {
             "media": [
                 {
-                    "file": "fonts/REPET.TTF",
-                    "name": "FONT_REPET_42",
+                    "file": "images/bt-icon.png",
+                    "name": "IMAGE_BT_ICON",
                     "targetPlatforms": null,
-                    "type": "font"
+                    "type": "bitmap"
                 },
                 {
                     "file": "fonts/DOT_FONT.TTF",
                     "name": "FONT_DOT_FONT_32",
-                    "targetPlatforms": null,
-                    "type": "font"
-                },
-                {
-                    "file": "fonts/BALLSONTHERAMPAGE.TTF",
-                    "name": "FONT_BALLSONTHERAMPAGE_42",
-                    "targetPlatforms": null,
-                    "type": "font"
-                },
-                {
-                    "file": "fonts/HIGHSPEED.TTF",
-                    "name": "FONT_HIGHSPEED_32",
                     "targetPlatforms": null,
                     "type": "font"
                 }
