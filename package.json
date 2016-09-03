@@ -6,7 +6,10 @@
     "pebble": {
         "displayName": "SerialDots",
         "enableMultiJS": true,
-        "messageKeys": [],
+        "messageKeys": [
+            "TEMPERATURE",
+            "CONDITIONS"
+        ],
         "projectType": "native",
         "resources": {
             "media": [
@@ -37,9 +40,14 @@
             ]
         },
         "sdkVersion": "3",
+        "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk"
+        ],
         "uuid": "2bb05cda-60d7-4cd1-a0da-11d2f14d6e93",
         "watchapp": {
-            "watchface": false
+            "watchface": true
         }
     },
     "version": "1.0.0"
