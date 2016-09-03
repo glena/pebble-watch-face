@@ -9,6 +9,8 @@ static Layer *s_canvas_layer;
 static TextLayer *s_weather_layer;
 static BitmapLayer *s_bt_icon_layer;
 static GBitmap *s_bt_icon_bitmap;
+static GColor background_color;
+static GColor text_color;
 
 static void bluetooth_callback(bool connected) {
   // Show icon if disconnected
@@ -59,8 +61,8 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
 
   GRect bounds = layer_get_bounds(layer);
   
-  graphics_context_set_stroke_color(ctx, GColorBlack);
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_context_set_stroke_color(ctx, text_color);
+  graphics_context_set_fill_color(ctx, text_color);
   graphics_context_set_stroke_width(ctx, 1);
   
   int first_line_top = PBL_IF_ROUND_ELSE(67, 61);
@@ -83,8 +85,8 @@ static void draw_time(GRect bounds, Layer *window_layer) {
   s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DOT_FONT_32));
   text_layer_set_font(s_time_layer, s_time_font);
   
-  text_layer_set_background_color(s_time_layer, GColorWhite);
-  text_layer_set_text_color(s_time_layer, GColorBlack);
+  text_layer_set_background_color(s_time_layer, background_color);
+  text_layer_set_text_color(s_time_layer, text_color);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
   
   layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
@@ -95,8 +97,8 @@ static void draw_date(GRect bounds, Layer *window_layer) {
   s_date_font = fonts_load_custom_font(fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_font(s_date_layer, s_date_font);
   
-  text_layer_set_background_color(s_date_layer, GColorWhite);
-  text_layer_set_text_color(s_date_layer, GColorBlack);
+  text_layer_set_background_color(s_date_layer, background_color);
+  text_layer_set_text_color(s_date_layer, text_color);
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
   
   layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
@@ -113,8 +115,8 @@ static void draw_lines(GRect bounds, Layer *window_layer) {
 static void draw_weather(GRect bounds, Layer *window_layer) {
   s_weather_layer = text_layer_create(GRect(0, bounds.size.h - 30, bounds.size.w, 20));
   
-  text_layer_set_background_color(s_weather_layer, GColorWhite);
-  text_layer_set_text_color(s_weather_layer, GColorBlack);
+  text_layer_set_background_color(s_weather_layer, background_color);
+  text_layer_set_text_color(s_weather_layer, text_color);
   text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
   text_layer_set_text(s_weather_layer, "Loading...");
   text_layer_set_font(s_weather_layer, s_date_font);
@@ -198,10 +200,13 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 }
 
 static void init() {
+  background_color = GColorWhite;
+  text_color = GColorBlack;
+  
   // Create main Window element and assign to pointer
   s_main_window = window_create();
   
-  window_set_background_color(s_main_window, GColorWhite);
+  window_set_background_color(s_main_window, background_color);
 
   // Set handlers to manage the elements inside the Window
   window_set_window_handlers(s_main_window, (WindowHandlers) {
