@@ -1,4 +1,8 @@
-var myAPIKey = '36875f654ae48ef4d17bcdbaf6bcca2a';
+var Clay = require('pebble-clay');
+var clayConfig = require('./config.js');
+var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
+
+var myAPIKey = null;
 
 var xhrRequest = function (url, type, callback) {
   var xhr = new XMLHttpRequest();
@@ -22,11 +26,9 @@ function locationSuccess(pos) {
 
       // Temperature in Kelvin requires adjustment
       var temperature = Math.round(json.main.temp - 273.15);
-      console.log('Temperature is ' + temperature);
 
       // Conditions
       var conditions = json.weather[0].main;      
-      console.log('Conditions are ' + conditions);
       
       // Assemble dictionary using our keys
       var dictionary = {
@@ -37,10 +39,10 @@ function locationSuccess(pos) {
       // Send to Pebble
       Pebble.sendAppMessage(dictionary,
         function(e) {
-          console.log('Weather info sent to Pebble successfully!');
+
         },
         function(e) {
-          console.log('Error sending weather info to Pebble!');
+
         }
       );
     }      
@@ -48,10 +50,11 @@ function locationSuccess(pos) {
 }
 
 function locationError(err) {
-  console.log('Error requesting location!');
+
 }
 
 function getWeather() {
+  if (myAPIKey === null) return;
   navigator.geolocation.getCurrentPosition(
     locationSuccess,
     locationError,
@@ -62,8 +65,6 @@ function getWeather() {
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready', 
   function(e) {
-    console.log('PebbleKit JS ready!');
-
     // Get the initial weather
     getWeather();
   }
@@ -72,7 +73,29 @@ Pebble.addEventListener('ready',
 // Listen for when an AppMessage is received
 Pebble.addEventListener('appmessage',
   function(e) {
-    console.log('AppMessage received!');
     getWeather();
   }                     
 );
+
+Pebble.addEventListener('showConfiguration', function(e) {
+  Pebble.openURL(clay.generateUrl());
+});
+
+Pebble.addEventListener('webviewclosed', function(e) {
+  if (e && !e.response) {
+    return;
+  }
+
+  // Get the keys and values from each config item
+  var dict = clay.getSettings(e.response);
+  var data = JSON.parse(e.response);
+  
+  myAPIKey = data.WeatherApiKey.value;
+
+  // Send settings values to watch side
+  Pebble.sendAppMessage(dict, function(e) {
+    getWeather();
+  }, function(e) {
+
+  });
+});

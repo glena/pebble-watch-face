@@ -175,6 +175,8 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   // Read tuples for data
   Tuple *temp_tuple = dict_find(iterator, MESSAGE_KEY_TEMPERATURE);
   Tuple *conditions_tuple = dict_find(iterator, MESSAGE_KEY_CONDITIONS);
+  Tuple *bg_color_t = dict_find(iterator, MESSAGE_KEY_BackgroundColor);
+  Tuple *txt_color_t = dict_find(iterator, MESSAGE_KEY_TextColor);
   
   // If all data is available, use it
   if(temp_tuple && conditions_tuple) {
@@ -184,6 +186,23 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     // Assemble full string and display
     snprintf(weather_layer_buffer, sizeof(weather_layer_buffer), "%s, %s", temperature_buffer, conditions_buffer);
     text_layer_set_text(s_weather_layer, weather_layer_buffer);
+  }
+
+  if(bg_color_t) {
+    background_color = GColorFromHEX(bg_color_t->value->int32);
+    
+    window_set_background_color(s_main_window, background_color);
+    text_layer_set_background_color(s_time_layer, background_color);
+    text_layer_set_background_color(s_date_layer, background_color);
+    text_layer_set_background_color(s_weather_layer, background_color);    
+  }
+
+  if(txt_color_t) {
+    text_color = GColorFromHEX(txt_color_t->value->int32);
+    
+    text_layer_set_text_color(s_time_layer, text_color);
+    text_layer_set_text_color(s_date_layer, text_color);
+    text_layer_set_text_color(s_weather_layer, text_color);
   }
 }
 

@@ -1,18 +1,34 @@
 {
     "author": "german.lena@gmail.com",
-    "dependencies": {},
+    "dependencies": {
+        "pebble-clay": "^1.0.2"
+    },
     "keywords": [],
     "name": "serialdots",
     "pebble": {
+        "capabilities": [
+            "location",
+            "configurable"
+        ],
         "displayName": "SerialDots",
         "enableMultiJS": true,
         "messageKeys": [
             "TEMPERATURE",
-            "CONDITIONS"
+            "CONDITIONS",
+            "BackgroundColor",
+            "TextColor",
+            "WeatherApiKey"
         ],
         "projectType": "native",
         "resources": {
             "media": [
+                {
+                    "file": "images/screenshot.png",
+                    "menuIcon": true,
+                    "name": "IMAGE_SCREENSHOT",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
                 {
                     "file": "images/bt-icon.png",
                     "name": "IMAGE_BT_ICON",
