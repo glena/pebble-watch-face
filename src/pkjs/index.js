@@ -54,28 +54,15 @@ function locationError(err) {
 }
 
 function getWeather() {
-  if (myAPIKey === null) return;
+  if (myAPIKey === null) {
+    return;
+  }
   navigator.geolocation.getCurrentPosition(
     locationSuccess,
     locationError,
     {timeout: 15000, maximumAge: 60000}
   );
 }
-
-// Listen for when the watchface is opened
-Pebble.addEventListener('ready', 
-  function(e) {
-    // Get the initial weather
-    getWeather();
-  }
-);
-
-// Listen for when an AppMessage is received
-Pebble.addEventListener('appmessage',
-  function(e) {
-    getWeather();
-  }                     
-);
 
 Pebble.addEventListener('showConfiguration', function(e) {
   Pebble.openURL(clay.generateUrl());
@@ -89,13 +76,49 @@ Pebble.addEventListener('webviewclosed', function(e) {
   // Get the keys and values from each config item
   var dict = clay.getSettings(e.response);
   var data = JSON.parse(e.response);
-  
-  myAPIKey = data.WeatherApiKey.value;
 
+  myAPIKey = data.WeatherApiKey.value;
+  
   // Send settings values to watch side
   Pebble.sendAppMessage(dict, function(e) {
     getWeather();
   }, function(e) {
 
   });
+});
+
+// // Listen for when an AppMessage is received
+// Pebble.addEventListener('appmessage',
+//   function(e) {
+//     getWeather();
+//   }                     
+// );
+
+Pebble.addEventListener('appmessage', function(event) {    
+    getWeather();
+});
+
+function restoreSettings() {
+  // Restore settings from localStorage and send to watch
+  var json_settings = localStorage.getItem('clay-settings');
+  var settings = JSON.parse(json_settings);
+  
+  if (settings) {
+    console.log(JSON.stringify(clay.getSettings(json_settings, true)));
+    Pebble.sendAppMessage(clay.getSettings(json_settings, true),
+        function(e) {
+          console.log('SENT');
+        },
+        function(e) {
+          console.log('ERROR');
+        }
+      );
+    
+    myAPIKey = settings.WeatherApiKey;
+    getWeather();
+  }
+}
+
+Pebble.addEventListener('ready', function(event) {    
+    restoreSettings();
 });

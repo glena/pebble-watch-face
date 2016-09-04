@@ -12,6 +12,28 @@ static GBitmap *s_bt_icon_bitmap;
 static GColor background_color;
 static GColor text_color;
 
+static void send_command(char * command) {
+  // Declare the dictionary's iterator
+  DictionaryIterator *out_iter;
+  
+  // Prepare the outbox buffer for this message
+  AppMessageResult result = app_message_outbox_begin(&out_iter);
+  if(result == APP_MSG_OK) {
+    // Add an item to ask for weather data
+    int value = 0;
+    dict_write_cstring (out_iter, MESSAGE_KEY_COMMAND_KEY, command);
+  
+    // Send this message
+    result = app_message_outbox_send();
+    if(result != APP_MSG_OK) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending the outbox: %d", (int)result);
+    }
+  } else {
+    // The outbox cannot be used right now
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Error preparing the outbox: %d", (int)result);
+  }
+}
+
 static void bluetooth_callback(bool connected) {
   // Show icon if disconnected
   layer_set_hidden(bitmap_layer_get_layer(s_bt_icon_layer), connected);
@@ -81,8 +103,8 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
 }
 
 static void draw_time(GRect bounds, Layer *window_layer) {
-  s_time_layer = text_layer_create(GRect(0, PBL_IF_ROUND_ELSE(70, 64), bounds.size.w, 50));
-  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DOT_FONT_32));
+  s_time_layer = text_layer_create(GRect(0, PBL_IF_ROUND_ELSE(62, 56), bounds.size.w, 50));
+  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_42));
   text_layer_set_font(s_time_layer, s_time_font);
   
   text_layer_set_background_color(s_time_layer, background_color);
@@ -137,6 +159,7 @@ static void create_bt_icon(GRect bounds, Layer *window_layer) {
 }
 
 static void main_window_load(Window *window) {
+  
   // Get information about the Window
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);

@@ -17,11 +17,18 @@
             "CONDITIONS",
             "BackgroundColor",
             "TextColor",
-            "WeatherApiKey"
+            "WeatherApiKey",
+            "COMMAND_KEY"
         ],
         "projectType": "native",
         "resources": {
             "media": [
+                {
+                    "file": "fonts/Roboto-Regular.ttf",
+                    "name": "FONT_ROBOTO_42",
+                    "targetPlatforms": null,
+                    "type": "font"
+                },
                 {
                     "file": "images/screenshot.png",
                     "menuIcon": true,
