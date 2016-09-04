@@ -12,13 +12,13 @@ module.exports = [
       },
       {
         "type": "color",
-        "messageKey": "BackgroundColor",
+        "messageKey": "BACKGROUND_COLOR",
         "defaultValue": "0xFFFFFF",
         "label": "Background Color"
       },
       {
         "type": "color",
-        "messageKey": "TextColor",
+        "messageKey": "TEXT_COLOR",
         "defaultValue": "0x000000",
         "label": "Text Color"
       }
@@ -34,7 +34,7 @@ module.exports = [
       {
         "type": "input",
         "label": "ApiKey",
-        "messageKey":"WeatherApiKey",
+        "messageKey":"WEATHER_APIKEY",
         "defaultValue": false
       }
     ]

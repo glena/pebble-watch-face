@@ -15,10 +15,10 @@
         "messageKeys": [
             "TEMPERATURE",
             "CONDITIONS",
-            "BackgroundColor",
-            "TextColor",
-            "WeatherApiKey",
-            "COMMAND_KEY"
+            "BACKGROUND_COLOR",
+            "TEXT_COLOR",
+            "weather_apikey",
+            "COMMAND"
         ],
         "projectType": "native",
         "resources": {

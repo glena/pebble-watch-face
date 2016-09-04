@@ -1,18 +1,11 @@
 #include <pebble.h>
 
-static Window *s_main_window;
-static TextLayer *s_time_layer;
-static TextLayer *s_date_layer;
-static GFont s_time_font;
-static GFont s_date_font;
-static Layer *s_canvas_layer;
-static TextLayer *s_weather_layer;
-static BitmapLayer *s_bt_icon_layer;
-static GBitmap *s_bt_icon_bitmap;
-static GColor background_color;
-static GColor text_color;
+#include "modules/render.h"
 
-static void send_command(char * command) {
+static Window *s_main_window;
+static bool is_connected;
+
+static void send_command(char *command) {
   // Declare the dictionary's iterator
   DictionaryIterator *out_iter;
   
@@ -20,13 +13,14 @@ static void send_command(char * command) {
   AppMessageResult result = app_message_outbox_begin(&out_iter);
   if(result == APP_MSG_OK) {
     // Add an item to ask for weather data
-    int value = 0;
-    dict_write_cstring (out_iter, MESSAGE_KEY_COMMAND_KEY, command);
+    dict_write_cstring (out_iter, MESSAGE_KEY_COMMAND, command);
   
     // Send this message
     result = app_message_outbox_send();
     if(result != APP_MSG_OK) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending the outbox: %d", (int)result);
+    } else {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Sent message: %s", command);
     }
   } else {
     // The outbox cannot be used right now
@@ -35,14 +29,15 @@ static void send_command(char * command) {
 }
 
 static void bluetooth_callback(bool connected) {
-  // Show icon if disconnected
-  layer_set_hidden(bitmap_layer_get_layer(s_bt_icon_layer), connected);
+  toggle_bt_icon(connected);
 
   if(!connected) {
     vibes_double_pulse();
-  } else {
+  } else if (!is_connected) {
     vibes_short_pulse();
   }
+
+  is_connected = connected;
 }
 
 static void update_time() {
@@ -58,8 +53,8 @@ static void update_time() {
   strftime(s_date_buffer, sizeof(s_date_buffer), "%a %b %e", tick_time);
 
   // Display this time on the TextLayer
-  text_layer_set_text(s_time_layer, s_time_buffer);
-  text_layer_set_text(s_date_layer, s_date_buffer);
+  update_time_data(s_time_buffer);
+  update_date_data(s_date_buffer);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
@@ -79,85 +74,6 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   }
 }
 
-static void canvas_update_proc(Layer *layer, GContext *ctx) {
-
-  GRect bounds = layer_get_bounds(layer);
-  
-  graphics_context_set_stroke_color(ctx, text_color);
-  graphics_context_set_fill_color(ctx, text_color);
-  graphics_context_set_stroke_width(ctx, 1);
-  
-  int first_line_top = PBL_IF_ROUND_ELSE(67, 61);
-  int time_height = 43;
-  int side_margin = 25;
-  
-  GPoint start_1 = GPoint(side_margin, first_line_top);
-  GPoint end_1 = GPoint(bounds.size.w - side_margin - 2, first_line_top);
-  
-  GPoint start_2 = GPoint(side_margin, first_line_top + time_height);
-  GPoint end_2 = GPoint(bounds.size.w - side_margin - 2, first_line_top + time_height);
-  
-  graphics_draw_line(ctx, start_1, end_1);
-  graphics_draw_line(ctx, start_2, end_2);
-
-}
-
-static void draw_time(GRect bounds, Layer *window_layer) {
-  s_time_layer = text_layer_create(GRect(0, PBL_IF_ROUND_ELSE(62, 56), bounds.size.w, 50));
-  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_42));
-  text_layer_set_font(s_time_layer, s_time_font);
-  
-  text_layer_set_background_color(s_time_layer, background_color);
-  text_layer_set_text_color(s_time_layer, text_color);
-  text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
-  
-  layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
-}
-
-static void draw_date(GRect bounds, Layer *window_layer) {
-  s_date_layer = text_layer_create(GRect(0, 10, bounds.size.w, 20));
-  s_date_font = fonts_load_custom_font(fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-  text_layer_set_font(s_date_layer, s_date_font);
-  
-  text_layer_set_background_color(s_date_layer, background_color);
-  text_layer_set_text_color(s_date_layer, text_color);
-  text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
-  
-  layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
-}
-
-static void draw_lines(GRect bounds, Layer *window_layer) {
-  s_canvas_layer = layer_create(bounds);
-  
-  layer_set_update_proc(s_canvas_layer, canvas_update_proc);
-  
-  layer_add_child(window_layer, s_canvas_layer);
-}
-
-static void draw_weather(GRect bounds, Layer *window_layer) {
-  s_weather_layer = text_layer_create(GRect(0, bounds.size.h - 30, bounds.size.w, 20));
-  
-  text_layer_set_background_color(s_weather_layer, background_color);
-  text_layer_set_text_color(s_weather_layer, text_color);
-  text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
-  text_layer_set_text(s_weather_layer, "Loading...");
-  text_layer_set_font(s_weather_layer, s_date_font);
-  
-  layer_add_child(window_layer, text_layer_get_layer(s_weather_layer));
-}
-
-static void create_bt_icon(GRect bounds, Layer *window_layer) {
-  // Create the Bluetooth icon GBitmap
-  s_bt_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BT_ICON);
-  
-  // Create the BitmapLayer to display the GBitmap
-  s_bt_icon_layer = bitmap_layer_create(GRect(bounds.size.w - 40, 12, 30, 30));
-  bitmap_layer_set_bitmap(s_bt_icon_layer, s_bt_icon_bitmap);
-  layer_add_child(window_layer, bitmap_layer_get_layer(s_bt_icon_layer));
-  
-  bluetooth_callback(connection_service_peek_pebble_app_connection());
-}
-
 static void main_window_load(Window *window) {
   
   // Get information about the Window
@@ -170,24 +86,13 @@ static void main_window_load(Window *window) {
   draw_lines(bounds, window_layer);
   
   create_bt_icon(bounds, window_layer);
+  bluetooth_callback(connection_service_peek_pebble_app_connection());
 }
 
 static void main_window_unload(Window *window) {
-  // Destroy TextLayer
-  text_layer_destroy(s_time_layer);
-  text_layer_destroy(s_date_layer);
-  text_layer_destroy(s_weather_layer);
-  
-  // Destroy CanvasLayer
-  layer_destroy(s_canvas_layer);
-  
-  // Unload GFont
-  fonts_unload_custom_font(s_time_font);
-  fonts_unload_custom_font(s_date_font);
-  
-  // unload bt icon
-  gbitmap_destroy(s_bt_icon_bitmap);
-  bitmap_layer_destroy(s_bt_icon_layer);
+
+  render_destroy();
+
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
@@ -198,34 +103,48 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   // Read tuples for data
   Tuple *temp_tuple = dict_find(iterator, MESSAGE_KEY_TEMPERATURE);
   Tuple *conditions_tuple = dict_find(iterator, MESSAGE_KEY_CONDITIONS);
-  Tuple *bg_color_t = dict_find(iterator, MESSAGE_KEY_BackgroundColor);
-  Tuple *txt_color_t = dict_find(iterator, MESSAGE_KEY_TextColor);
+  Tuple *bg_color_t = dict_find(iterator, MESSAGE_KEY_BACKGROUND_COLOR);
+  Tuple *txt_color_t = dict_find(iterator, MESSAGE_KEY_TEXT_COLOR);
+  Tuple *command = dict_find(iterator, MESSAGE_KEY_COMMAND);
+
+  char *command_text = conditions_tuple->value->cstring;
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "init message %s", command_text);
+
+  if (command) {
+    if (strcmp(command_text, "init") == 0) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "init message");
+      send_command("settings");
+    }
+    if (strcmp(command_text, "settings") == 0) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "settings message");
+    }
+    if (strcmp(command_text, "weather") == 0) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "weather message");
+    }
+  }
   
   // If all data is available, use it
   if(temp_tuple && conditions_tuple) {
-    snprintf(temperature_buffer, sizeof(temperature_buffer), "%dC", (int)temp_tuple->value->int32);
+    snprintf(temperature_buffer, sizeof(temperature_buffer), "%d ºc", (int)temp_tuple->value->int32);
     snprintf(conditions_buffer, sizeof(conditions_buffer), "%s", conditions_tuple->value->cstring);
     
     // Assemble full string and display
     snprintf(weather_layer_buffer, sizeof(weather_layer_buffer), "%s, %s", temperature_buffer, conditions_buffer);
-    text_layer_set_text(s_weather_layer, weather_layer_buffer);
+    update_weather_data(weather_layer_buffer);
   }
 
   if(bg_color_t) {
-    background_color = GColorFromHEX(bg_color_t->value->int32);
+    GColor background_color = GColorFromHEX(bg_color_t->value->int32);
     
     window_set_background_color(s_main_window, background_color);
-    text_layer_set_background_color(s_time_layer, background_color);
-    text_layer_set_background_color(s_date_layer, background_color);
-    text_layer_set_background_color(s_weather_layer, background_color);    
+    update_background_color(background_color);  
   }
 
   if(txt_color_t) {
-    text_color = GColorFromHEX(txt_color_t->value->int32);
+    GColor text_color = GColorFromHEX(txt_color_t->value->int32);
     
-    text_layer_set_text_color(s_time_layer, text_color);
-    text_layer_set_text_color(s_date_layer, text_color);
-    text_layer_set_text_color(s_weather_layer, text_color);
+    update_text_color(text_color);
   }
 }
 
@@ -242,13 +161,12 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 }
 
 static void init() {
-  background_color = GColorWhite;
-  text_color = GColorBlack;
+  is_connected = true;
   
   // Create main Window element and assign to pointer
   s_main_window = window_create();
   
-  window_set_background_color(s_main_window, background_color);
+  window_set_background_color(s_main_window, GColorWhite);
 
   // Set handlers to manage the elements inside the Window
   window_set_window_handlers(s_main_window, (WindowHandlers) {
