@@ -65,7 +65,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   
   // Get weather update every 30 minutes
   if(tick_time->tm_min % 30 == 0) {
-    send_command("weather")
+    send_command("weather");
   }
 }
 

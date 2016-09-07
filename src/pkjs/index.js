@@ -44,14 +44,14 @@ function restoreSettings() {
 
     console.log('DATA TO SEND', JSON.stringify(dict));
 
-    Pebble.sendAppMessage(dict,
-        function(e) {
-          console.log('SENT');
-        },
-        function(e) {
-          console.log('ERROR', JSON.stringify(e));
-        }
-      );
+    // Pebble.sendAppMessage(dict,
+    //     function(e) {
+    //       console.log('SENT');
+    //     },
+    //     function(e) {
+    //       console.log('ERROR', JSON.stringify(e));
+    //     }
+    //   );
     
     if (settings.WEATHER_APIKEY) {
       location.setAPIKey(settings.WEATHER_APIKEY);
