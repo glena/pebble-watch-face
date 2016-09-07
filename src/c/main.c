@@ -74,11 +74,6 @@ static void main_window_load(Window *window) {
   // Get information about the Window
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-  
-  draw_time(bounds, window_layer);
-  draw_date(bounds, window_layer);
-  draw_weather(bounds, window_layer);
-  draw_lines(bounds, window_layer);
 
   GColor background_color;
   GColor text_color;
@@ -90,9 +85,15 @@ static void main_window_load(Window *window) {
     persist_read_data(NUM_TEXT_COLOR_PKEY, &text_color, sizeof(GColor));    
   }
 
-  window_set_background_color(s_main_window, background_color);
-  update_background_color(background_color);  
-  update_text_color(text_color);  
+  set_background_color(background_color);
+  set_text_color(text_color);
+
+  window_set_background_color(s_main_window, background_color); 
+
+  draw_time(bounds, window_layer);
+  draw_date(bounds, window_layer);
+  draw_weather(bounds, window_layer);
+  draw_lines(bounds, window_layer);
   
   create_bt_icon(bounds, window_layer);
   bluetooth_callback(connection_service_peek_pebble_app_connection());

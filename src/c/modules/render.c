@@ -9,33 +9,22 @@ static Layer *s_canvas_layer;
 static TextLayer *s_weather_layer;
 static BitmapLayer *s_bt_icon_layer;
 
-bool updated_background_color = false;
-bool updated_text_color = false;
-
 static GColor background_color;
 static GColor text_color;
 
 static GColor get_background_color() {
-  if (updated_background_color) {
-    return background_color;
-  }
-  return GColorWhite;
+  return background_color;
 }
 
 static GColor get_text_color() {
-  if (updated_text_color) {
-    return text_color;
-  }
-  return GColorBlack;
+  return text_color;
 }
 
-static void set_background_color(GColor new_background_color) {
-  updated_background_color = true;
+void set_background_color(GColor new_background_color) {
   background_color = new_background_color; 
 }
 
-static void set_text_color(GColor new_text_color) {
-  updated_text_color = true;
+void set_text_color(GColor new_text_color) {
   text_color = new_text_color; 
 }
 
