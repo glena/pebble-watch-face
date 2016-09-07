@@ -1,3 +1,5 @@
+var myAPIKey = null;
+
 var xhrRequest = function (url, type, callback) {
   var xhr = new XMLHttpRequest();
   xhr.onload = function () {

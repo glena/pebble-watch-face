@@ -37,6 +37,8 @@ void update_date_data(char *s_date_buffer) {
 }
 
 void update_weather_data(char *weather_layer_buffer) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Weather persisted2");
+    APP_LOG(APP_LOG_LEVEL_INFO, weather_layer_buffer);
   text_layer_set_text(s_weather_layer, weather_layer_buffer);
 }
 
@@ -99,13 +101,13 @@ void draw_lines(GRect bounds, Layer *window_layer) {
   layer_add_child(window_layer, s_canvas_layer);
 }
 
-void draw_weather(GRect bounds, Layer *window_layer) {
+void draw_weather(GRect bounds, Layer *window_layer, char *weather_layer_buffer) {
   s_weather_layer = text_layer_create(GRect(0, bounds.size.h - 30, bounds.size.w, 20));
   
   text_layer_set_background_color(s_weather_layer, get_background_color());
   text_layer_set_text_color(s_weather_layer, get_text_color());
   text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
-  text_layer_set_text(s_weather_layer, "Loading...");
+  text_layer_set_text(s_weather_layer, weather_layer_buffer);
   text_layer_set_font(s_weather_layer, s_date_font);
   
   layer_add_child(window_layer, text_layer_get_layer(s_weather_layer));

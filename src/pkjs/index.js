@@ -16,8 +16,6 @@ Pebble.addEventListener('webviewclosed', function(e) {
   var dict = clay.getSettings(e.response);
   var data = JSON.parse(e.response);
 
-  dict.COMMAND = 'settings';
-
   location.setAPIKey(data.WEATHER_APIKEY.value);
   
   Pebble.sendAppMessage(dict, function(e) {
@@ -40,8 +38,6 @@ function restoreSettings() {
 
     var dict = clay.getSettings(json_settings, true);
 
-    dict["COMMAND"] = "settings";
-
     console.log('DATA TO SEND', JSON.stringify(dict));
 
     // Pebble.sendAppMessage(dict,
@@ -62,13 +58,5 @@ function restoreSettings() {
 }
 
 Pebble.addEventListener('ready', function(event) {    
-//   Pebble.sendAppMessage({COMMAND:'init'},
-//         function(e) {
-//           console.log('SENT init');
-//         },
-//         function(e) {
-//           console.log('ERROR init');
-//         }
-//       );
-  restoreSettings();
+  // restoreSettings();
 });

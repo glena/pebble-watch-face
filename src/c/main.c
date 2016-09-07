@@ -4,6 +4,11 @@
 
 #define NUM_BACKGROUND_COLOR_PKEY 1
 #define NUM_TEXT_COLOR_PKEY 2
+#define NUM_WEATHER_PKEY 3
+
+GColor background_color;
+GColor text_color;
+char weather_layer_buffer[32];
 
 static Window *s_main_window;
 static bool is_connected;
@@ -75,24 +80,12 @@ static void main_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
-  GColor background_color;
-  GColor text_color;
-
-  if (persist_exists(NUM_BACKGROUND_COLOR_PKEY)) {
-    persist_read_data(NUM_BACKGROUND_COLOR_PKEY, &background_color, sizeof(GColor));    
-  }
-  if (persist_exists(NUM_TEXT_COLOR_PKEY)) {
-    persist_read_data(NUM_TEXT_COLOR_PKEY, &text_color, sizeof(GColor));    
-  }
-
   set_background_color(background_color);
   set_text_color(text_color);
 
-  window_set_background_color(s_main_window, background_color); 
-
   draw_time(bounds, window_layer);
   draw_date(bounds, window_layer);
-  draw_weather(bounds, window_layer);
+  draw_weather(bounds, window_layer, weather_layer_buffer);
   draw_lines(bounds, window_layer);
   
   create_bt_icon(bounds, window_layer);
@@ -115,25 +108,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   Tuple *conditions_tuple = dict_find(iterator, MESSAGE_KEY_CONDITIONS);
   Tuple *bg_color_t = dict_find(iterator, MESSAGE_KEY_BACKGROUND_COLOR);
   Tuple *txt_color_t = dict_find(iterator, MESSAGE_KEY_TEXT_COLOR);
-  Tuple *command = dict_find(iterator, MESSAGE_KEY_COMMAND);
-
-  char *command_text = command->value->cstring;
-
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "received message");
-  APP_LOG(APP_LOG_LEVEL_DEBUG, command_text);
-
-  if (command) {
-    if (strcmp(command_text, "init") == 0) {
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "init message");
-      send_command("settings");
-    }
-    if (strcmp(command_text, "settings") == 0) {
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "settings message");
-    }
-    if (strcmp(command_text, "weather") == 0) {
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "weather message");
-    }
-  }
   
   // If all data is available, use it
   if(temp_tuple && conditions_tuple) {
@@ -147,8 +121,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 
   if(bg_color_t) {
     GColor background_color = GColorFromHEX(bg_color_t->value->int32);
-   
-    persist_write_data(NUM_BACKGROUND_COLOR_PKEY, &background_color, sizeof(background_color));
 
     window_set_background_color(s_main_window, background_color);
     update_background_color(background_color);  
@@ -156,8 +128,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   
   if(txt_color_t) {
     GColor text_color = GColorFromHEX(txt_color_t->value->int32);
-
-    persist_write_data(NUM_TEXT_COLOR_PKEY, &text_color, sizeof(text_color));
     
     update_text_color(text_color);
   }
@@ -177,11 +147,29 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 
 static void init() {
   is_connected = true;
-  
+
+  if (persist_exists(NUM_BACKGROUND_COLOR_PKEY)) {
+    persist_read_data(NUM_BACKGROUND_COLOR_PKEY, &background_color, sizeof(GColor));    
+  } else {
+    background_color = GColorWhite;
+  }
+
+  if (persist_exists(NUM_TEXT_COLOR_PKEY)) {
+    persist_read_data(NUM_TEXT_COLOR_PKEY, &text_color, sizeof(GColor));    
+  } else {
+    background_color = GColorBlack;
+  }
+
+  if (persist_exists(NUM_WEATHER_PKEY)) {
+    persist_read_string(NUM_WEATHER_PKEY, weather_layer_buffer, 32);
+  } else {
+    strcpy (weather_layer_buffer,"Loading...");
+  }
+
   // Create main Window element and assign to pointer
   s_main_window = window_create();
   
-  window_set_background_color(s_main_window, GColorWhite);
+  window_set_background_color(s_main_window, background_color);
 
   // Set handlers to manage the elements inside the Window
   window_set_window_handlers(s_main_window, (WindowHandlers) {
@@ -213,6 +201,10 @@ static void init() {
 }
 
 static void deinit() {
+  persist_write_string(NUM_WEATHER_PKEY, weather_layer_buffer);
+  persist_write_data(NUM_BACKGROUND_COLOR_PKEY, &background_color, sizeof(background_color));
+  persist_write_data(NUM_TEXT_COLOR_PKEY, &text_color, sizeof(text_color));
+
   // Destroy Window
   window_destroy(s_main_window);
 }
