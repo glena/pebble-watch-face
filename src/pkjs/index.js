@@ -17,46 +17,25 @@ Pebble.addEventListener('webviewclosed', function(e) {
   var data = JSON.parse(e.response);
 
   location.setAPIKey(data.WEATHER_APIKEY.value);
+  localStorage.setItem('weather_api_key', data.WEATHER_APIKEY.value);
   
   Pebble.sendAppMessage(dict, function(e) {
-    // location.getWeather();
+    location.getWeather();
   }, function(e) {
 
   });
 });
 
 Pebble.addEventListener('appmessage', function(event) {
-  console.log('appmessage',JSON.stringify(event));    
   location.getWeather();
 });
 
 function restoreSettings() {
-  var json_settings = localStorage.getItem('clay-settings');
-  var settings = JSON.parse(json_settings);
-  
-  if (settings) {
-
-    var dict = clay.getSettings(json_settings, true);
-
-    console.log('DATA TO SEND', JSON.stringify(dict));
-
-    // Pebble.sendAppMessage(dict,
-    //     function(e) {
-    //       console.log('SENT');
-    //     },
-    //     function(e) {
-    //       console.log('ERROR', JSON.stringify(e));
-    //     }
-    //   );
-    
-    if (settings.WEATHER_APIKEY) {
-      location.setAPIKey(settings.WEATHER_APIKEY);
-    }
-
-    location.getWeather();
-  }
+  var weather_api_key = localStorage.getItem('weather_api_key');
+  location.setAPIKey(weather_api_key);
+  location.getWeather();
 }
 
 Pebble.addEventListener('ready', function(event) {    
-  // restoreSettings();
+  restoreSettings();
 });

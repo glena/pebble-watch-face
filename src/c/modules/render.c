@@ -37,8 +37,6 @@ void update_date_data(char *s_date_buffer) {
 }
 
 void update_weather_data(char *weather_layer_buffer) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "Weather persisted2");
-    APP_LOG(APP_LOG_LEVEL_INFO, weather_layer_buffer);
   text_layer_set_text(s_weather_layer, weather_layer_buffer);
 }
 
