@@ -2,6 +2,9 @@
 
 #include "./modules/render.h"
 
+#define NUM_BACKGROUND_COLOR_PKEY 1
+#define NUM_TEXT_COLOR_PKEY 2
+
 static Window *s_main_window;
 static bool is_connected;
 
@@ -62,15 +65,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   
   // Get weather update every 30 minutes
   if(tick_time->tm_min % 30 == 0) {
-    // Begin dictionary
-    DictionaryIterator *iter;
-    app_message_outbox_begin(&iter);
-  
-    // Add a key-value pair
-    dict_write_uint8(iter, 0, 0);
-  
-    // Send the message!
-    app_message_outbox_send();
+    send_command("weather")
   }
 }
 
@@ -84,6 +79,20 @@ static void main_window_load(Window *window) {
   draw_date(bounds, window_layer);
   draw_weather(bounds, window_layer);
   draw_lines(bounds, window_layer);
+
+  GColor background_color;
+  GColor text_color;
+
+  if (persist_exists(NUM_BACKGROUND_COLOR_PKEY)) {
+    persist_read_data(NUM_BACKGROUND_COLOR_PKEY, &background_color, sizeof(GColor));    
+  }
+  if (persist_exists(NUM_TEXT_COLOR_PKEY)) {
+    persist_read_data(NUM_TEXT_COLOR_PKEY, &text_color, sizeof(GColor));    
+  }
+
+  window_set_background_color(s_main_window, background_color);
+  update_background_color(background_color);  
+  update_text_color(text_color);  
   
   create_bt_icon(bounds, window_layer);
   bluetooth_callback(connection_service_peek_pebble_app_connection());
@@ -137,13 +146,17 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 
   if(bg_color_t) {
     GColor background_color = GColorFromHEX(bg_color_t->value->int32);
-    
+   
+    persist_write_data(NUM_BACKGROUND_COLOR_PKEY, &background_color, sizeof(background_color));
+
     window_set_background_color(s_main_window, background_color);
     update_background_color(background_color);  
   }
-
+  
   if(txt_color_t) {
     GColor text_color = GColorFromHEX(txt_color_t->value->int32);
+
+    persist_write_data(NUM_TEXT_COLOR_PKEY, &text_color, sizeof(text_color));
     
     update_text_color(text_color);
   }

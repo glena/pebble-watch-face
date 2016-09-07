@@ -21,7 +21,7 @@ Pebble.addEventListener('webviewclosed', function(e) {
   location.setAPIKey(data.WEATHER_APIKEY.value);
   
   Pebble.sendAppMessage(dict, function(e) {
-    location.getWeather();
+    // location.getWeather();
   }, function(e) {
 
   });
