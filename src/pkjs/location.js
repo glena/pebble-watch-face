@@ -29,6 +29,7 @@ function locationSuccess(pos) {
       
       // Assemble dictionary using our keys
       var dictionary = {
+        'COMMAND':'weather',
         'TEMPERATURE': temperature,
         'CONDITIONS': conditions
       };
@@ -36,10 +37,10 @@ function locationSuccess(pos) {
       // Send to Pebble
       Pebble.sendAppMessage(dictionary,
         function(e) {
-
+          console.log('WEATHER SENT', JSON.stringify(dictionary));
         },
         function(e) {
-
+          console.log('WEATHER ERROR', JSON.stringify(dictionary));
         }
       );
     }      

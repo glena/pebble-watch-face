@@ -1,6 +1,6 @@
 #include <pebble.h>
 
-#include "modules/render.h"
+#include "./modules/render.h"
 
 static Window *s_main_window;
 static bool is_connected;
@@ -15,13 +15,13 @@ static void send_command(char *command) {
     // Add an item to ask for weather data
     dict_write_cstring (out_iter, MESSAGE_KEY_COMMAND, command);
   
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Sent message: %s", command);
+    
     // Send this message
     result = app_message_outbox_send();
     if(result != APP_MSG_OK) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Error sending the outbox: %d", (int)result);
-    } else {
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Sent message: %s", command);
-    }
+    } 
   } else {
     // The outbox cannot be used right now
     APP_LOG(APP_LOG_LEVEL_ERROR, "Error preparing the outbox: %d", (int)result);
@@ -107,9 +107,10 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   Tuple *txt_color_t = dict_find(iterator, MESSAGE_KEY_TEXT_COLOR);
   Tuple *command = dict_find(iterator, MESSAGE_KEY_COMMAND);
 
-  char *command_text = conditions_tuple->value->cstring;
+  char *command_text = command->value->cstring;
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "init message %s", command_text);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "received message");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, command_text);
 
   if (command) {
     if (strcmp(command_text, "init") == 0) {
