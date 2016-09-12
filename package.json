@@ -24,29 +24,16 @@
         "resources": {
             "media": [
                 {
-                    "file": "fonts/Roboto-Regular.ttf",
-                    "name": "FONT_ROBOTO_42",
+                    "file": "fonts/pendule_ornamental.ttf",
+                    "name": "FONT_PENDULE_48",
                     "targetPlatforms": null,
                     "type": "font"
-                },
-                {
-                    "file": "images/screenshot.png",
-                    "menuIcon": true,
-                    "name": "IMAGE_SCREENSHOT",
-                    "targetPlatforms": null,
-                    "type": "bitmap"
                 },
                 {
                     "file": "images/bt-icon.png",
                     "name": "IMAGE_BT_ICON",
                     "targetPlatforms": null,
                     "type": "bitmap"
-                },
-                {
-                    "file": "fonts/DOT_FONT.TTF",
-                    "name": "FONT_DOT_FONT_32",
-                    "targetPlatforms": null,
-                    "type": "font"
                 }
             ]
         },

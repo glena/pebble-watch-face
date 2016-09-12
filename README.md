@@ -1,6 +1,6 @@
 # pebble-watch-face
 
-![](https://raw.githubusercontent.com/glena/pebble-watch-face/master/resources/images/screenshot.png)
+![](https://raw.githubusercontent.com/glena/pebble-watch-face/master/screenshot.png)
 
 ## Compile and run
 

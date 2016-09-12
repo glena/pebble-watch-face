@@ -1,30 +1,43 @@
 #pragma once
 #include <pebble.h>
 
-void update_time_data(char *s_time_buffer);
+typedef struct RenderResources {
+  TextLayer *s_time_layer;
+  TextLayer *s_date_layer;
+  TextLayer *s_weather_layer;
 
-void update_date_data(char *s_date_buffer);
+  BitmapLayer *s_bt_icon_layer;
 
-void update_weather_data(char *weather_layer_buffer);
+  Layer *s_canvas_layer;
 
-void toggle_bt_icon(bool connected);
+  GFont s_primary_font;
+  GFont s_secondary_font;
 
-void draw_time(GRect bounds, Layer *window_layer);
+  GBitmap *s_bt_icon_bitmap;
+} RenderResources;
 
-void draw_date(GRect bounds, Layer *window_layer);
+struct RenderResources* render_init(GRect bounds);
 
-void draw_lines(GRect bounds, Layer *window_layer);
+void update_time_data(RenderResources *resources, char *s_time_buffer);
 
-void draw_weather(GRect bounds, Layer *window_layer, char *weather_layer_buffer);
+void update_date_data(RenderResources *resources, char *s_date_buffer);
 
-void create_bt_icon(GRect bounds, Layer *window_layer);
+void update_weather_data(RenderResources *resources, char *weather_layer_buffer);
 
-void render_destroy();
+void toggle_bt_icon(RenderResources *resources, bool connected);
 
-void update_background_color(GColor background_color);
+void draw_time(RenderResources *resources, GRect bounds, Layer *window_layer, GColor background_color, GColor text_color);
 
-void update_text_color(GColor text_color);
+void draw_date(RenderResources *resources, GRect bounds, Layer *window_layer, GColor background_color, GColor text_color);
 
-void set_background_color(GColor new_background_color);
+void draw_lines(RenderResources *resources, GRect bounds, Layer *window_layer, GColor text_color);
 
-void set_text_color(GColor new_text_color);
+void draw_weather(RenderResources *resources, GRect bounds, Layer *window_layer, char *weather_layer_buffer, GColor background_color, GColor text_color);
+
+void create_bt_icon(RenderResources *resources, GRect bounds, Layer *window_layer);
+
+void render_destroy(RenderResources *resources);
+
+void update_background_color(RenderResources *resources, GColor background_color);
+
+void update_text_color(RenderResources *resources, GColor text_color);

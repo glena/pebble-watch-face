@@ -13,6 +13,8 @@ char weather_layer_buffer[32];
 static Window *s_main_window;
 static bool is_connected;
 
+RenderResources *render_resources;
+
 static void send_command(char *command) {
   // Declare the dictionary's iterator
   DictionaryIterator *out_iter;
@@ -37,7 +39,7 @@ static void send_command(char *command) {
 }
 
 static void bluetooth_callback(bool connected) {
-  toggle_bt_icon(connected);
+  toggle_bt_icon(render_resources, connected);
 
   if(!connected) {
     vibes_double_pulse();
@@ -61,8 +63,8 @@ static void update_time() {
   strftime(s_date_buffer, sizeof(s_date_buffer), "%a %b %e", tick_time);
 
   // Display this time on the TextLayer
-  update_time_data(s_time_buffer);
-  update_date_data(s_date_buffer);
+  update_time_data(render_resources, s_time_buffer);
+  update_date_data(render_resources, s_date_buffer);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
@@ -80,28 +82,26 @@ static void main_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
-  set_background_color(background_color);
-  set_text_color(text_color);
+  render_resources = render_init(bounds);
 
-  draw_time(bounds, window_layer);
-  draw_date(bounds, window_layer);
-  draw_weather(bounds, window_layer, weather_layer_buffer);
-  draw_lines(bounds, window_layer);
+  draw_time(render_resources, bounds, window_layer, background_color, text_color);
+  draw_date(render_resources, bounds, window_layer, background_color, text_color);
+  draw_weather(render_resources, bounds, window_layer, weather_layer_buffer, background_color, text_color);
+  draw_lines(render_resources, bounds, window_layer, text_color);
   
-  create_bt_icon(bounds, window_layer);
+  create_bt_icon(render_resources, bounds, window_layer);
   bluetooth_callback(connection_service_peek_pebble_app_connection());
 }
 
 static void main_window_unload(Window *window) {
 
-  render_destroy();
+  render_destroy(render_resources);
 
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   static char temperature_buffer[8];
   static char conditions_buffer[32];
-  static char weather_layer_buffer[32];
   
   // Read tuples for data
   Tuple *temp_tuple = dict_find(iterator, MESSAGE_KEY_TEMPERATURE);
@@ -116,20 +116,26 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     
     // Assemble full string and display
     snprintf(weather_layer_buffer, sizeof(weather_layer_buffer), "%s, %s", temperature_buffer, conditions_buffer);
-    update_weather_data(weather_layer_buffer);
+    update_weather_data(render_resources, weather_layer_buffer);
+
+    persist_write_string(NUM_WEATHER_PKEY, weather_layer_buffer);
   }
 
   if(bg_color_t) {
     GColor background_color = GColorFromHEX(bg_color_t->value->int32);
 
     window_set_background_color(s_main_window, background_color);
-    update_background_color(background_color);  
+    update_background_color(render_resources, background_color);  
+
+    persist_write_data(NUM_BACKGROUND_COLOR_PKEY, &background_color, sizeof(background_color));
   }
   
   if(txt_color_t) {
     GColor text_color = GColorFromHEX(txt_color_t->value->int32);
     
-    update_text_color(text_color);
+    update_text_color(render_resources, text_color);
+
+    persist_write_data(NUM_TEXT_COLOR_PKEY, &text_color, sizeof(text_color));
   }
 }
 
@@ -147,6 +153,8 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 
 static void init() {
   is_connected = true;
+
+  APP_LOG(APP_LOG_LEVEL_INFO, "Getting persisted data"); 
 
   if (persist_exists(NUM_BACKGROUND_COLOR_PKEY)) {
     persist_read_data(NUM_BACKGROUND_COLOR_PKEY, &background_color, sizeof(GColor));    
@@ -201,10 +209,6 @@ static void init() {
 }
 
 static void deinit() {
-  persist_write_string(NUM_WEATHER_PKEY, weather_layer_buffer);
-  persist_write_data(NUM_BACKGROUND_COLOR_PKEY, &background_color, sizeof(background_color));
-  persist_write_data(NUM_TEXT_COLOR_PKEY, &text_color, sizeof(text_color));
-
   // Destroy Window
   window_destroy(s_main_window);
 }

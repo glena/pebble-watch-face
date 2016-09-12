@@ -1,84 +1,73 @@
 #include "render.h"
 
-static TextLayer *s_time_layer;
-static TextLayer *s_date_layer;
-static GFont s_time_font;
-static GFont s_date_font;
-static GBitmap *s_bt_icon_bitmap;
-static Layer *s_canvas_layer;
-static TextLayer *s_weather_layer;
-static BitmapLayer *s_bt_icon_layer;
+RenderResources* render_init(GRect bounds) {
+  RenderResources *resources;
+  resources = malloc(sizeof(RenderResources)); 
 
-static GColor background_color;
-static GColor text_color;
+  resources->s_time_layer = text_layer_create(GRect(0, PBL_IF_ROUND_ELSE(56, 50), bounds.size.w, 50));
+  resources->s_date_layer = text_layer_create(GRect(0, 10, bounds.size.w, 20));
+  resources->s_weather_layer = text_layer_create(GRect(0, bounds.size.h - 30, bounds.size.w, 20));
+  resources->s_canvas_layer = layer_create(bounds);
+  resources->s_bt_icon_layer = bitmap_layer_create(GRect(bounds.size.w - 40, 12, 30, 30));
 
-static GColor get_background_color() {
-  return background_color;
+  resources->s_primary_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_PENDULE_48));
+  // resources->s_primary_font = fonts_get_system_font(FONT_KEY_LECO_32_BOLD_NUMBERS);
+  resources->s_secondary_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+
+  resources->s_bt_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BT_ICON);
+
+  return resources;
 }
 
-static GColor get_text_color() {
-  return text_color;
+void update_time_data(RenderResources *resources, char *s_time_buffer) {
+  text_layer_set_text(resources->s_time_layer, s_time_buffer);
 }
 
-void set_background_color(GColor new_background_color) {
-  background_color = new_background_color; 
+void update_date_data(RenderResources *resources, char *s_date_buffer) {
+  text_layer_set_text(resources->s_date_layer, s_date_buffer);
 }
 
-void set_text_color(GColor new_text_color) {
-  text_color = new_text_color; 
+void update_weather_data(RenderResources *resources, char *weather_layer_buffer) {
+  text_layer_set_text(resources->s_weather_layer, weather_layer_buffer);
 }
 
-void update_time_data(char *s_time_buffer) {
-  text_layer_set_text(s_time_layer, s_time_buffer);
+void toggle_bt_icon(RenderResources *resources, bool connected) {
+  layer_set_hidden(bitmap_layer_get_layer(resources->s_bt_icon_layer), connected);
 }
 
-void update_date_data(char *s_date_buffer) {
-  text_layer_set_text(s_date_layer, s_date_buffer);
-}
-
-void update_weather_data(char *weather_layer_buffer) {
-  text_layer_set_text(s_weather_layer, weather_layer_buffer);
-}
-
-void toggle_bt_icon(bool connected) {
-  layer_set_hidden(bitmap_layer_get_layer(s_bt_icon_layer), connected);
-}
-
-void draw_time(GRect bounds, Layer *window_layer) {
-  s_time_layer = text_layer_create(GRect(0, PBL_IF_ROUND_ELSE(62, 56), bounds.size.w, 50));
-  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_ROBOTO_42));
-  text_layer_set_font(s_time_layer, s_time_font);
+void draw_time(RenderResources *resources, GRect bounds, Layer *window_layer, GColor background_color, GColor text_color) {
+  text_layer_set_font(resources->s_time_layer, resources->s_primary_font);
   
-  text_layer_set_background_color(s_time_layer, get_background_color());
-  text_layer_set_text_color(s_time_layer, get_text_color());
-  text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
+  text_layer_set_background_color(resources->s_time_layer, background_color);
+  text_layer_set_text_color(resources->s_time_layer, text_color);
+  text_layer_set_text_alignment(resources->s_time_layer, GTextAlignmentCenter);
   
-  layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
+  //TODO Move this
+  layer_add_child(window_layer, text_layer_get_layer(resources->s_time_layer));
 }
 
-void draw_date(GRect bounds, Layer *window_layer) {
-  s_date_layer = text_layer_create(GRect(0, 10, bounds.size.w, 20));
-  s_date_font = fonts_load_custom_font(fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-  text_layer_set_font(s_date_layer, s_date_font);
+void draw_date(RenderResources *resources, GRect bounds, Layer *window_layer, GColor background_color, GColor text_color) {
+  text_layer_set_font(resources->s_date_layer, resources->s_secondary_font);
   
-  text_layer_set_background_color(s_date_layer, get_background_color());
-  text_layer_set_text_color(s_date_layer, get_text_color());
-  text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
+  text_layer_set_background_color(resources->s_date_layer, background_color);
+  text_layer_set_text_color(resources->s_date_layer, text_color);
+  text_layer_set_text_alignment(resources->s_date_layer, GTextAlignmentCenter);
   
-  layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
+  layer_add_child(window_layer, text_layer_get_layer(resources->s_date_layer));
 }
 
+GColor lines_color;
 void canvas_update_proc(Layer *layer, GContext *ctx) {
 
   GRect bounds = layer_get_bounds(layer);
   
-  graphics_context_set_stroke_color(ctx, get_text_color());
-  graphics_context_set_fill_color(ctx, get_text_color());
+  graphics_context_set_stroke_color(ctx, lines_color);
+  graphics_context_set_fill_color(ctx, lines_color);
   graphics_context_set_stroke_width(ctx, 1);
   
   int first_line_top = PBL_IF_ROUND_ELSE(67, 61);
   int time_height = 43;
-  int side_margin = 25;
+  int side_margin = 27;
   
   GPoint start_1 = GPoint(side_margin, first_line_top);
   GPoint end_1 = GPoint(bounds.size.w - side_margin - 2, first_line_top);
@@ -91,64 +80,58 @@ void canvas_update_proc(Layer *layer, GContext *ctx) {
 
 }
 
-void draw_lines(GRect bounds, Layer *window_layer) {
-  s_canvas_layer = layer_create(bounds);
+void draw_lines(RenderResources *resources, GRect bounds, Layer *window_layer, GColor text_color) {
+  lines_color = text_color;
   
-  layer_set_update_proc(s_canvas_layer, canvas_update_proc);
+  layer_set_update_proc(resources->s_canvas_layer, canvas_update_proc);
   
-  layer_add_child(window_layer, s_canvas_layer);
+  layer_add_child(window_layer, resources->s_canvas_layer);
 }
 
-void draw_weather(GRect bounds, Layer *window_layer, char *weather_layer_buffer) {
-  s_weather_layer = text_layer_create(GRect(0, bounds.size.h - 30, bounds.size.w, 20));
+void draw_weather(RenderResources *resources, GRect bounds, Layer *window_layer, char *weather_layer_buffer, GColor background_color, GColor text_color) {
+
+  text_layer_set_background_color(resources->s_weather_layer, background_color);
+  text_layer_set_text_color(resources->s_weather_layer, text_color);
+  text_layer_set_text_alignment(resources->s_weather_layer, GTextAlignmentCenter);
+  text_layer_set_text(resources->s_weather_layer, weather_layer_buffer);
+  text_layer_set_font(resources->s_weather_layer, resources->s_secondary_font);
   
-  text_layer_set_background_color(s_weather_layer, get_background_color());
-  text_layer_set_text_color(s_weather_layer, get_text_color());
-  text_layer_set_text_alignment(s_weather_layer, GTextAlignmentCenter);
-  text_layer_set_text(s_weather_layer, weather_layer_buffer);
-  text_layer_set_font(s_weather_layer, s_date_font);
-  
-  layer_add_child(window_layer, text_layer_get_layer(s_weather_layer));
+  layer_add_child(window_layer, text_layer_get_layer(resources->s_weather_layer));
 }
 
-void create_bt_icon(GRect bounds, Layer *window_layer) {
-  // Create the Bluetooth icon GBitmap
-  s_bt_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BT_ICON);
-  
-  // Create the BitmapLayer to display the GBitmap
-  s_bt_icon_layer = bitmap_layer_create(GRect(bounds.size.w - 40, 12, 30, 30));
-  bitmap_layer_set_bitmap(s_bt_icon_layer, s_bt_icon_bitmap);
-  layer_add_child(window_layer, bitmap_layer_get_layer(s_bt_icon_layer));
+void create_bt_icon(RenderResources *resources, GRect bounds, Layer *window_layer) {
+  bitmap_layer_set_bitmap(resources->s_bt_icon_layer, resources->s_bt_icon_bitmap);
+  layer_add_child(window_layer, bitmap_layer_get_layer(resources->s_bt_icon_layer));
 }
 
-void render_destroy() {
+void render_destroy(RenderResources *resources) {
   // Destroy TextLayer
-  text_layer_destroy(s_time_layer);
-  text_layer_destroy(s_date_layer);
-  text_layer_destroy(s_weather_layer);
+  text_layer_destroy(resources->s_time_layer);
+  text_layer_destroy(resources->s_date_layer);
+  text_layer_destroy(resources->s_weather_layer);
   
   // Destroy CanvasLayer
-  layer_destroy(s_canvas_layer);
+  layer_destroy(resources->s_canvas_layer);
   
   // Unload GFont
-  fonts_unload_custom_font(s_time_font);
-  fonts_unload_custom_font(s_date_font);
+  fonts_unload_custom_font(resources->s_primary_font);
+  // fonts_unload_custom_font(resources->s_secondary_font);
   
   // unload bt icon
-  gbitmap_destroy(s_bt_icon_bitmap);
-  bitmap_layer_destroy(s_bt_icon_layer);
+  gbitmap_destroy(resources->s_bt_icon_bitmap);
+  bitmap_layer_destroy(resources->s_bt_icon_layer);
+
+  free(resources);
 }
 
-void update_background_color(GColor new_background_color) {
-  set_background_color(new_background_color);
-  text_layer_set_background_color(s_time_layer, get_background_color());
-  text_layer_set_background_color(s_date_layer, get_background_color());
-  text_layer_set_background_color(s_weather_layer, get_background_color());
+void update_background_color(RenderResources *resources, GColor background_color) {
+  text_layer_set_background_color(resources->s_time_layer, background_color);
+  text_layer_set_background_color(resources->s_date_layer, background_color);
+  text_layer_set_background_color(resources->s_weather_layer, background_color);
 }
 
-void update_text_color(GColor new_text_color) {
-  set_text_color(new_text_color);
-  text_layer_set_text_color(s_time_layer, get_text_color());
-  text_layer_set_text_color(s_date_layer, get_text_color());
-  text_layer_set_text_color(s_weather_layer, get_text_color());
+void update_text_color(RenderResources *resources, GColor text_color) {
+  text_layer_set_text_color(resources->s_time_layer, text_color);
+  text_layer_set_text_color(resources->s_date_layer, text_color);
+  text_layer_set_text_color(resources->s_weather_layer, text_color);
 }
